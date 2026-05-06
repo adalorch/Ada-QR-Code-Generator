@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Ada's QR Code Generator — Serpell Primary</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800&family=DM+Mono:wght@400;500&display=swap');
+
+:root {
+  /* 
+  
+  2026 Science Talent Search: Seeds of Science – Nurturing knowledge for all 
+  Serpell Primary School
+  Video Title: The Seed of Knowledge: The Magic of QR Codes
+  Author: Ada Lorchirachoonkul
+  Date Created: 28/04/2026
+  
+*/
+  --teal:        #00c4cc;
+  --teal-light:  #b2f0f2;
+  --teal-pale:   #e6fafb;
+  --teal-deep:   #007b82;
+  --green:       #4caf50;
+  --green-light: #a8d8a8;
+  --surface:     #f0faf8;
+  --border:      #9ed9da;
+  --border-str:  #00a0a8;
+  --text:        #0d2b1e;
+  --text-muted:  #3a7a6a;
+  --head:        'Fredoka One', cursive;
+  --body:        'Nunito', sans-serif;
+  --mono:        'DM Mono', monospace;
+  /* alias to teal for mask highlights */
+  --orange:      #00c4cc;
+  --orange-glow: rgba(0,196,204,0.28);
+  /* hearts keep pink */
+  --pink:        #ff6eb4;
+  /* legacy aliases used in card/button CSS */
+  --pink-light:  var(--teal-light);
+  --pink-pale:   var(--teal-pale);
+  --pink-deep:   var(--teal-deep);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--body);
+  background: #0a1a0e;
+  color: var(--text);
+  min-height: 100vh;
+  display: flex; align-items: flex-start; justify-content: center;
+  padding: 0 0 3rem;
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* Seeds of Science canvas sits fixed behind everything */
+#bg-canvas {
+  position: fixed; inset: 0; width: 100%; height: 100%;
+  z-index: 0; pointer-events: none; display: block;
+}
+
+/* Content sits above canvas */
+.shell {
+  width: 100%; max-width: 660px;
+  position: relative; z-index: 1;
+  padding: 0 1rem;
+}
+
+/* ── Header ── */
+.ada-header {
+  text-align: center;
+  padding: 2.5rem 1rem 1.5rem;
+  position: relative;
+}
+.ada-header h1 {
+  font-family: var(--head);
+  font-size: clamp(22px, 5vw, 34px);
+  color: var(--teal);
+  text-shadow: 0 0 24px rgba(0,196,204,0.7), 2px 2px 0 #0a1a0e;
+  line-height: 1.2; letter-spacing: 0.5px;
+}
+.ada-header h1 span {
+  display: block; font-size: 0.62em;
+  color: #a0eecc; text-shadow: 1px 1px 0 #0a1a0e; margin-top: 4px;
+}
+.ada-header .subtitle {
+  font-size: 13px; color: #4ab890; margin-top: 6px;
+  font-family: var(--mono); letter-spacing: .04em;
+}
+.hearts-row { display: flex; justify-content: center; gap: 10px; margin-top: 26px; }
+.heart-svg { animation: float-heart 3s ease-in-out infinite; }
+.heart-svg:nth-child(2) { animation-delay: .4s; }
+.heart-svg:nth-child(3) { animation-delay: .8s; }
+.heart-svg:nth-child(4) { animation-delay: 1.2s; }
+.heart-svg:nth-child(5) { animation-delay: 1.6s; }
+@keyframes float-heart {
+  0%,100% { transform: translateY(0) scale(1); }
+  50%      { transform: translateY(-7px) scale(1.12); }
+}
+
+/* Wand travel line */
+.wand-line { display: block; margin-bottom: 6px; }
+
+/* ── Cards ── */
+.card {
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: 20px;
+  padding: 1.4rem 1.5rem;
+  margin-bottom: 1rem;
+  position: relative; overflow: hidden;
+  box-shadow: 0 4px 24px rgba(0,196,204,0.10);
+  transition: box-shadow .2s;
+}
+.card:hover { box-shadow: 0 6px 32px rgba(0,196,204,0.20); }
+.card::after {
+  content: '';
+  position: absolute; top: -18px; right: -18px;
+  width: 56px; height: 56px;
+  background: radial-gradient(circle, rgba(0,196,204,0.15) 0%, transparent 70%);
+  border-radius: 50%; pointer-events: none;
+}
+.card-title {
+  font-family: var(--head); font-size: 13px; letter-spacing: .06em;
+  color: var(--teal-deep); margin-bottom: .9rem;
+  display: flex; align-items: center; gap: 6px;
+}
+.card-title::before {
+  content: '✦'; color: var(--teal); font-size: 11px;
+  animation: spin-star 4s linear infinite; display: inline-block;
+}
+@keyframes spin-star { to { transform: rotate(360deg); } }
+
+/* ── Tabs ── */
+.tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 1.1rem; }
+.tab {
+  padding: 6px 14px; border-radius: 20px; border: 2px solid var(--border);
+  background: transparent; font-size: 13px; font-weight: 700;
+  cursor: pointer; color: var(--text-muted); font-family: var(--body); transition: all .15s;
+}
+.tab:hover { border-color: var(--teal); color: var(--teal); transform: scale(1.04); }
+.tab.active { background: var(--teal); color: #fff; border-color: var(--teal); box-shadow: 0 3px 12px rgba(0,196,204,0.40); }
+
+/* ── Fields ── */
+.field { display: flex; flex-direction: column; gap: 5px; margin-bottom: .85rem; }
+.field:last-child { margin-bottom: 0; }
+.field label { font-size: 12px; color: var(--text-muted); font-family: var(--mono); font-weight: 600; }
+input[type=text], input[type=url], input[type=email], input[type=tel], textarea, select {
+  width: 100%; padding: 9px 12px; border-radius: 12px; border: 2px solid var(--border);
+  font-size: 14px; font-family: var(--body); background: #f4fdfb; color: var(--text);
+  outline: none; resize: vertical; transition: border-color .12s, box-shadow .12s;
+}
+input:focus, textarea:focus, select:focus {
+  border-color: var(--teal); box-shadow: 0 0 0 3px rgba(0,196,204,0.18);
+}
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.color-pair { display: flex; align-items: center; gap: 8px; }
+input[type=color] { width: 36px; height: 36px; padding: 3px; border-radius: 10px; border: 2px solid var(--border); cursor: pointer; background: transparent; }
+.color-hex { font-size: 12px; color: var(--text-muted); font-family: var(--mono); }
+.range-row { display: flex; align-items: center; gap: 10px; }
+input[type=range] { flex: 1; accent-color: var(--teal); }
+.range-val { font-size: 12px; color: var(--text-muted); font-family: var(--mono); min-width: 90px; }
+
+/* ── Mask grid ── */
+.mask-grid { display: grid; grid-template-columns: repeat(9, 1fr); gap: 8px; }
+.mask-btn {
+  aspect-ratio: 1; border-radius: 10px; border: 2px solid var(--border);
+  background: #f0faf8; cursor: pointer; overflow: hidden; padding: 0;
+  position: relative; transition: border-color .15s, box-shadow .15s, transform .15s;
+}
+.mask-btn:hover { border-color: #ff6eb4; transform: scale(1.08); box-shadow: 0 3px 10px rgba(255,110,180,0.35); }
+.mask-btn canvas { width: 100% !important; height: 100% !important; display: block; pointer-events: none; }
+.mask-auto-inner {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  width: 100%; height: 100%; gap: 1px; padding: 4px;
+}
+.mask-auto-inner .auto-word { font-size: 10px; font-family: var(--head); color: var(--text-muted); line-height: 1; pointer-events: none; }
+.mask-auto-inner .auto-num { font-size: 11px; font-family: var(--head); color: #d63a8a; font-weight: 700; line-height: 1; pointer-events: none; display: none; }
+.mask-btn.active .auto-word { color: #d63a8a; }
+
+/* ── Active mask: dominant pink highlight (25% reduced from previous) ── */
+.mask-btn.active {
+  border: 3px solid #ff6eb4;
+  box-shadow:
+    0 0 0 3px rgba(255,110,180,0.41),
+    0 0 14px 3px rgba(255,110,180,0.38),
+    0 5px 15px rgba(214,58,138,0.41);
+  transform: scale(1.14);
+  z-index: 10;
+}
+/* Pink tint overlay on active button */
+.mask-btn.active::after {
+  content: '';
+  position: absolute; inset: 0; border-radius: 7px;
+  background: rgba(255,110,180,0.16);
+  pointer-events: none; z-index: 1;
+}
+.mask-btn .tick {
+  display: none; position: absolute; top: 3px; right: 3px;
+  width: 16px; height: 16px; background: #ff6eb4; border-radius: 50%;
+  align-items: center; justify-content: center; font-size: 10px; color: #fff; font-weight: 900; z-index: 4; pointer-events: none;
+  box-shadow: 0 2px 5px rgba(214,58,138,0.45);
+}
+.mask-btn.active .tick { display: flex; }
+.mask-num {
+  position: absolute; bottom: 3px; left: 50%; transform: translateX(-50%);
+  font-size: 10px; font-family: var(--head); font-weight: 700;
+  color: #fff; background: rgba(214,58,138,0.88);
+  padding: 1px 5px; border-radius: 8px;
+  pointer-events: none; z-index: 3;
+  letter-spacing: 0.02em; line-height: 1.4;
+  white-space: nowrap;
+}
+.mask-btn.auto-used { border: 3px dashed #ff6eb4; box-shadow: 0 0 0 3px rgba(255,110,180,0.35), 0 0 12px rgba(255,110,180,0.30); }
+.mask-btn.auto-used::before {
+  content: 'auto'; position: absolute; top: 2px; left: 3px;
+  font-size: 7px; font-family: var(--mono); color: #d63a8a;
+  background: rgba(255,110,180,0.22); padding: 0 2px; border-radius: 2px; pointer-events: none; z-index: 2; font-weight: 700;
+}
+
+/* ── Score table ── */
+.score-table-wrap { margin-top: 1rem; border: 2px solid var(--border); border-radius: 14px; overflow: hidden; display: none; }
+.score-table-wrap.visible { display: block; }
+.score-table { width: 100%; border-collapse: collapse; font-size: 12px; font-family: var(--mono); }
+.score-table thead tr { background: var(--teal-light); }
+.score-table th { padding: 7px 10px; text-align: left; font-weight: 700; color: var(--teal-deep); font-size: 11px; letter-spacing: .04em; border-bottom: 2px solid var(--border); }
+.score-table th:last-child, .score-table td:last-child { text-align: right; }
+.score-table td { padding: 5px 10px; color: var(--text); border-bottom: 1px solid var(--border); }
+.score-table tr:last-child td { border-bottom: none; }
+.score-table tr.row-best td { background: rgba(255,110,180,0.09); }
+.score-table tr.row-best td:first-child { font-weight: 700; color: #d63a8a; }
+.score-table tr.row-selected td { background: rgba(255,110,180,0.05); }
+.score-bar-wrap { display: flex; align-items: center; gap: 6px; justify-content: flex-end; }
+.score-bar { height: 6px; border-radius: 3px; background: var(--border); min-width: 2px; transition: width .3s; }
+.score-bar.best { background: #ff6eb4; }
+.score-bar.selected { background: #d63a8a; }
+.score-val { min-width: 36px; text-align: right; color: var(--text-muted); }
+
+/* ── Logo drop ── */
+.logo-drop { border: 2px dashed var(--border); border-radius: 14px; padding: 1rem; text-align: center; cursor: pointer; position: relative; transition: border-color .12s; background: #f0faf8; }
+.logo-drop:hover, .logo-drop.drag { border-color: var(--teal); background: var(--teal-pale); }
+.logo-drop input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+.logo-drop-text { font-size: 13px; color: var(--text-muted); pointer-events: none; font-weight: 600; }
+.logo-meta { display: flex; align-items: center; gap: 10px; margin-top: .75rem; }
+.logo-thumb { width: 48px; height: 48px; object-fit: contain; border-radius: 10px; border: 2px solid var(--border); background: #fff; }
+.logo-remove { font-size: 12px; color: var(--teal-deep); font-family: var(--mono); cursor: pointer; text-decoration: underline; }
+
+/* ── Output card ── */
+.output-card { background: var(--surface); border: 2px solid var(--border); border-radius: 20px; padding: 1.5rem; display: flex; flex-direction: column; align-items: center; gap: 1rem; box-shadow: 0 4px 20px rgba(0,196,204,0.12); }
+.qr-wrap { line-height: 0; border-radius: 16px; overflow: hidden; border: 3px solid var(--teal-light); box-shadow: 0 0 0 6px rgba(0,196,204,0.08); }
+.placeholder { width: 220px; height: 220px; display: flex; align-items: center; justify-content: center; color: var(--text-muted); font-size: 13px; font-family: var(--mono); }
+#qr-canvas { display: block; }
+
+/* ── Generate button ── */
+.gen-btn {
+  width: 100%; padding: 13px; border-radius: 16px;
+  background: linear-gradient(135deg, var(--teal) 0%, var(--teal-deep) 100%);
+  color: #fff; font-size: 16px; font-weight: 800; font-family: var(--head);
+  cursor: pointer; border: none; transition: transform .15s, box-shadow .15s; margin-top: .5rem;
+  letter-spacing: .5px; box-shadow: 0 5px 18px rgba(0,123,130,0.45); position: relative; overflow: hidden;
+}
+.gen-btn::after { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(255,255,255,0.18) 0%, transparent 60%); pointer-events: none; }
+.gen-btn:hover { transform: translateY(-2px) scale(1.01); box-shadow: 0 8px 24px rgba(0,123,130,0.55); }
+.gen-btn:active { transform: scale(0.98); }
+
+/* ── Download buttons ── */
+.dl-row { display: flex; gap: 10px; width: 100%; }
+.dl-btn { flex: 1; padding: 9px 16px; border-radius: 12px; border: 2px solid var(--border); background: transparent; font-size: 13px; font-family: var(--body); font-weight: 700; color: var(--teal-deep); cursor: pointer; transition: all .12s; }
+.dl-btn:hover { background: var(--teal-light); border-color: var(--teal); }
+
+#qr-hidden-host { position: absolute; left: -9999px; visibility: hidden; }
+</style>
+</head>
+<body>
+
+<!-- Seeds of Science animated canvas background -->
+<canvas id="bg-canvas"></canvas>
+
+<div id="qr-hidden-host"></div>
+
+<div class="shell">
+  <!-- Header -->
+  <div class="ada-header">
+    <!-- Animated science scan line -->
+    <svg class="wand-line" width="100%" height="28" viewBox="0 0 600 28" preserveAspectRatio="none">
+      <defs>
+        <linearGradient id="wand-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%"   stop-color="#0a1a0e" stop-opacity="0"/>
+          <stop offset="20%"  stop-color="#00c4cc" stop-opacity="1"/>
+          <stop offset="50%"  stop-color="#a0eecc" stop-opacity="1"/>
+          <stop offset="80%"  stop-color="#00c4cc" stop-opacity="1"/>
+          <stop offset="100%" stop-color="#0a1a0e" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      <rect y="12" width="600" height="2" rx="1" fill="url(#wand-grad)"/>
+      <circle r="5" fill="#fff" opacity=".9">
+        <animateMotion dur="3s" repeatCount="indefinite" path="M0,13 L600,13"/>
+        <animate attributeName="opacity" values="0;1;1;0" dur="3s" repeatCount="indefinite"/>
+      </circle>
+      <circle r="3" fill="#00c4cc">
+        <animateMotion dur="3s" begin="1.5s" repeatCount="indefinite" path="M0,13 L600,13"/>
+        <animate attributeName="opacity" values="0;1;1;0" dur="3s" begin="1.5s" repeatCount="indefinite"/>
+      </circle>
+    </svg>
+
+    <h1>🌱 Ada's QR Code Generator 🌱<span>Serpell Primary School — Year 2</span></h1>
+    <p class="subtitle">🌱 Sceience Talent Search 2026 💚 Seeds of Science 💚 offline 🌱</p>
+
+    <div class="hearts-row">
+      <svg class="heart-svg" width="22" height="20" viewBox="0 0 22 20"><path d="M11 18.5S1 12 1 5.5A5 5 0 0111 3a5 5 0 0110 2.5C21 12 11 18.5 11 18.5z" fill="#ff6eb4"/></svg>
+      <svg class="heart-svg" width="16" height="14" viewBox="0 0 22 20"><path d="M11 18.5S1 12 1 5.5A5 5 0 0111 3a5 5 0 0110 2.5C21 12 11 18.5 11 18.5z" fill="#ffccea"/></svg>
+      <svg class="heart-svg" width="26" height="24" viewBox="0 0 22 20"><path d="M11 18.5S1 12 1 5.5A5 5 0 0111 3a5 5 0 0110 2.5C21 12 11 18.5 11 18.5z" fill="#d63a8a"/></svg>
+      <svg class="heart-svg" width="16" height="14" viewBox="0 0 22 20"><path d="M11 18.5S1 12 1 5.5A5 5 0 0111 3a5 5 0 0110 2.5C21 12 11 18.5 11 18.5z" fill="#ffccea"/></svg>
+      <svg class="heart-svg" width="22" height="20" viewBox="0 0 22 20"><path d="M11 18.5S1 12 1 5.5A5 5 0 0111 3a5 5 0 0110 2.5C21 12 11 18.5 11 18.5z" fill="#ff6eb4"/></svg>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🌐 Content</div>
+    <div class="tabs" id="tabs">
+      <button class="tab active" data-tab="url">URL</button>
+      <button class="tab" data-tab="text">Text</button>
+      <button class="tab" data-tab="wifi">Wi-Fi</button>
+      <button class="tab" data-tab="email">Email</button>
+      <button class="tab" data-tab="phone">Phone</button>
+      <button class="tab" data-tab="vcard">vCard</button>
+    </div>
+    <div id="form-url">
+      <div class="field"><label>URL</label><input type="url" id="url-input" placeholder="https://example.com"/></div>
+    </div>
+    <div id="form-text" style="display:none">
+      <div class="field"><label>Text</label><textarea id="text-input" rows="3" placeholder="Enter any text..."></textarea></div>
+    </div>
+    <div id="form-wifi" style="display:none">
+      <div class="grid2">
+        <div class="field"><label>SSID</label><input type="text" id="wifi-ssid" placeholder="NetworkName"/></div>
+        <div class="field"><label>Password</label><input type="text" id="wifi-pass" placeholder="password"/></div>
+      </div>
+      <div class="field"><label>Security</label>
+        <select id="wifi-sec"><option value="WPA">WPA/WPA2</option><option value="WEP">WEP</option><option value="">None</option></select>
+      </div>
+    </div>
+    <div id="form-email" style="display:none">
+      <div class="field"><label>To</label><input type="email" id="email-to" placeholder="someone@example.com"/></div>
+      <div class="field"><label>Subject</label><input type="text" id="email-sub" placeholder="Subject"/></div>
+      <div class="field"><label>Body</label><textarea id="email-body" rows="2" placeholder="Message..."></textarea></div>
+    </div>
+    <div id="form-phone" style="display:none">
+      <div class="field"><label>Phone number</label><input type="tel" id="phone-input" placeholder="+61 400 000 000"/></div>
+    </div>
+    <div id="form-vcard" style="display:none">
+      <div class="grid2">
+        <div class="field"><label>First name</label><input type="text" id="vc-first" placeholder="Jane"/></div>
+        <div class="field"><label>Last name</label><input type="text" id="vc-last" placeholder="Smith"/></div>
+      </div>
+      <div class="grid2">
+        <div class="field"><label>Phone</label><input type="tel" id="vc-phone" placeholder="+61 400 000 000"/></div>
+        <div class="field"><label>Email</label><input type="email" id="vc-email" placeholder="jane@example.com"/></div>
+      </div>
+      <div class="grid2">
+        <div class="field"><label>Organisation</label><input type="text" id="vc-org" placeholder="Company"/></div>
+        <div class="field"><label>Website</label><input type="url" id="vc-url" placeholder="https://example.com"/></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🎨 Style</div>
+    <div class="grid2" style="margin-bottom:.85rem">
+      <div class="field">
+        <label>Foreground</label>
+        <div class="color-pair">
+          <input type="color" id="fg-color" value="#000000"/>
+          <span class="color-hex" id="fg-hex">#000000</span>
+        </div>
+      </div>
+      <div class="field">
+        <label>Background</label>
+        <div class="color-pair">
+          <input type="color" id="bg-color" value="#ffffff"/>
+          <span class="color-hex" id="bg-hex">#ffffff</span>
+        </div>
+      </div>
+    </div>
+    <div class="field">
+      <label>Size</label>
+      <div class="range-row">
+        <input type="range" min="100" max="600" step="50" value="300" id="qr-size"/>
+        <span class="range-val" id="size-out">300 &times; 300 px</span>
+      </div>
+    </div>
+    <div class="field">
+      <label>Error correction &mdash; use H when adding a logo</label>
+      <select id="ecc">
+        <option value="L">L &mdash; 7% (compact)</option>
+        <option value="M" selected>M &mdash; 15% (balanced)</option>
+        <option value="Q">Q &mdash; 25%</option>
+        <option value="H">H &mdash; 30% (best for logos)</option>
+      </select>
+    </div>
+  </div>
+
+
+  <div class="card">
+    <div class="card-title">🌸 Logo overlay</div>
+    <p style="font-size:12px;color:var(--text-muted);margin-bottom:.85rem;font-family:var(--mono)">Set error correction to H for reliable scanning with a logo.</p>
+    <div class="logo-drop" id="logo-drop">
+      <input type="file" id="logo-file" accept="image/*"/>
+      <div class="logo-drop-text">Click or drag an image &mdash; PNG, SVG, JPG</div>
+    </div>
+    <div id="logo-extras" style="display:none">
+      <div class="logo-meta">
+        <img id="logo-img" class="logo-thumb" src="" alt="Logo"/>
+        <span class="logo-remove" id="logo-remove">Remove logo</span>
+      </div>
+      <div class="field" style="margin-top:.85rem">
+        <label>Logo size (% of QR)</label>
+        <div class="range-row">
+          <input type="range" min="10" max="30" step="1" value="20" id="logo-size"/>
+          <span class="range-val" id="logo-size-out">20%</span>
+        </div>
+      </div>
+      <div class="field">
+        <label>Padding (px)</label>
+        <div class="range-row">
+          <input type="range" min="0" max="20" step="1" value="6" id="logo-pad"/>
+          <span class="range-val" id="logo-pad-out">6 px</span>
+        </div>
+      </div>
+      <div class="field">
+        <label>Logo background</label>
+        <div class="color-pair">
+          <input type="color" id="logo-bg" value="#ffffff"/>
+          <span class="color-hex" id="logo-bg-hex">#ffffff</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🎭 Mask pattern</div>
+    <p style="font-size:12px;color:var(--text-muted);margin-bottom:.85rem;font-family:var(--mono)">Masks prevent large solid areas that confuse scanners. Auto selects the optimal mask. Clicking any pattern regenerates instantly.</p>
+    <div class="mask-grid" id="mask-grid">
+      <button class="mask-btn active" data-mask="-1" title="Auto — lowest penalty score">
+        <div class="mask-auto-inner">
+          <span class="auto-word">Auto</span>
+          <span class="auto-num" id="auto-num"></span>
+        </div>
+        <span class="tick">&#10003;</span>
+      </button>
+    </div>
+    <div class="score-table-wrap" id="score-table-wrap">
+      <table class="score-table">
+        <thead><tr>
+          <th>Mask</th>
+          <th>Pattern description</th>
+          <th>Penalty score</th>
+        </tr></thead>
+        <tbody id="score-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+
+  <button class="gen-btn" onclick="generate()">✨ Generate my QR Code! ✨</button>
+
+  <div class="output-card" style="margin-top:1rem">
+    <div class="qr-wrap">
+      <div class="placeholder" id="placeholder">QR will appear here</div>
+      <canvas id="qr-canvas" style="display:none"></canvas>
+    </div>
+    <div class="dl-row" id="dl-row" style="display:none">
+      <button class="dl-btn" onclick="dlPng()">💾 Download PNG</button>
+      <button class="dl-btn" onclick="dlSvg()">🖼️ Download SVG</button>
+    </div>
+  </div>
+
+  <div style="text-align:center;padding:1.5rem 0 0.5rem;font-size:12px;color:#4ab890;font-family:var(--mono);">
+    🌱 Sceience Talent Search 2026 💚 Seeds of Science 💚 offline & private 🌱
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+/* ═══════════════════════════════════════════════════════════════════
+   Background Animation 
+   * Dark earthy gradient background
+   * Floating spore / firefly particles
+   * Drifting dandelion seeds
+   ═══════════════════════════════════════════════════════════════════ */
+(function () {
+  const cv  = document.getElementById('bg-canvas');
+  const ctx = cv.getContext('2d');
+  let W, H;
+
+  function resize() { W = cv.width = window.innerWidth; H = cv.height = window.innerHeight; }
+  resize();
+  window.addEventListener('resize', resize);
+
+  const rand  = (a, b) => a + Math.random() * (b - a);
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+  /* ── Floating spores / fireflies ── */
+  const SPORE_COUNT = 18;
+  const spores = Array.from({ length: SPORE_COUNT }, () => newSpore());
+  function newSpore() {
+    return {
+      x: Math.random() * W, y: rand(0.1, 1.0) * H,
+      r: rand(1.2, 3.5), dx: rand(-18, 18), dy: rand(-30, -8),
+      alpha: 0, maxAlpha: rand(0.3, 0.8),
+      phase: rand(0, Math.PI * 2), speed: rand(0.5, 1.8),
+      color: Math.random() < 0.6
+        ? `hsl(${rand(140,170)},80%,65%)`
+        : `hsl(${rand(170,200)},80%,70%)`,
+      life: 0, maxLife: rand(4, 11), delay: rand(0, 8), waited: 0,
+    };
+  }
+
+  /* ── Dandelion seeds drifting ── */
+  const DANDE_COUNT = 6;
+  const dandelions = Array.from({ length: DANDE_COUNT }, () => newDande());
+  function newDande() {
+    return {
+      x: rand(-0.05, 1.05) * W, y: rand(0.5, 1.1) * H,
+      size: rand(3, 7), dx: rand(-25, 25), dy: rand(-55, -20),
+      alpha: 0, maxAlpha: rand(0.4, 0.85),
+      life: 0, maxLife: rand(8, 18), delay: rand(0, 12), waited: 0,
+      sway: rand(0.2, 0.6), swayPhase: rand(0, Math.PI * 2),
+    };
+  }
+
+  function drawDandelionSeed(x, y, size, alpha) {
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.strokeStyle = 'rgba(200,255,200,0.7)';
+    ctx.lineWidth = 0.8;
+    ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x, y - size * 2.2); ctx.stroke();
+    const rays = 8;
+    for (let i = 0; i < rays; i++) {
+      const a = (i / rays) * Math.PI * 2;
+      const ex = x + Math.cos(a) * size * 1.1;
+      const ey = (y - size * 2.2) + Math.sin(a) * size * 0.7;
+      ctx.beginPath(); ctx.moveTo(x, y - size * 2.2); ctx.lineTo(ex, ey); ctx.stroke();
+      ctx.beginPath();
+      ctx.ellipse(ex, ey, size * 0.22, size * 0.12, a, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(200,255,220,0.85)';
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  let t = 0, lastTS = null;
+
+  function frame(ts) {
+    if (!lastTS) lastTS = ts;
+    const dt = clamp((ts - lastTS) / 1000, 0, 0.05);
+    lastTS = ts; t += dt;
+
+    /* Dark soil background */
+    const sky = ctx.createLinearGradient(0, 0, 0, H);
+    sky.addColorStop(0,    '#030a04');
+    sky.addColorStop(0.5,  '#061009');
+    sky.addColorStop(0.78, '#0a1a0e');
+    sky.addColorStop(1,    '#1a2d10');
+    ctx.fillStyle = sky;
+    ctx.fillRect(0, 0, W, H);
+
+    /* Soil layer at bottom */
+    const soilY = H * 0.88;
+    const soil = ctx.createLinearGradient(0, soilY, 0, H);
+    soil.addColorStop(0,   'rgba(40,22,8,0.0)');
+    soil.addColorStop(0.2, 'rgba(40,22,8,0.55)');
+    soil.addColorStop(1,   'rgba(28,14,4,0.92)');
+    ctx.fillStyle = soil;
+    ctx.fillRect(0, soilY, W, H - soilY);
+
+    /* Spores */
+    spores.forEach(s => {
+      s.waited += dt;
+      if (s.waited < s.delay) return;
+      s.life += dt;
+      if (s.life > s.maxLife) { Object.assign(s, newSpore()); s.x = rand(0,W); s.y = rand(H*0.3, H); return; }
+      const prog = s.life / s.maxLife;
+      s.alpha = prog < 0.15 ? prog / 0.15 * s.maxAlpha
+              : prog > 0.8  ? (1 - prog) / 0.2 * s.maxAlpha
+              : s.maxAlpha;
+      s.x += s.dx * dt + Math.sin(t * s.speed + s.phase) * 0.6;
+      s.y += s.dy * dt;
+      ctx.globalAlpha = s.alpha;
+      ctx.shadowBlur = 10; ctx.shadowColor = s.color;
+      ctx.fillStyle = s.color;
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r + Math.sin(t * 2 + s.phase) * 0.6, 0, Math.PI * 2);
+      ctx.fill();
+    });
+    ctx.globalAlpha = 1; ctx.shadowBlur = 0;
+
+    /* Dandelion seeds */
+    dandelions.forEach(d => {
+      d.waited += dt;
+      if (d.waited < d.delay) return;
+      d.life += dt;
+      if (d.life > d.maxLife) { Object.assign(d, newDande()); return; }
+      const prog = d.life / d.maxLife;
+      d.alpha = prog < 0.12 ? prog / 0.12 * d.maxAlpha
+              : prog > 0.82  ? (1 - prog) / 0.18 * d.maxAlpha
+              : d.maxAlpha;
+      d.x += (d.dx + Math.sin(t * d.sway + d.swayPhase) * 12) * dt;
+      d.y += d.dy * dt;
+      drawDandelionSeed(d.x, d.y, d.size, d.alpha);
+    });
+
+    requestAnimationFrame(frame);
+  }
+
+  requestAnimationFrame(frame);
+})();
+
+/* ═══════════════════════════════
+   QR CODE GENERATOR — App Logic 
+   ═══════════════════════════════ */
+let logoDataUrl  = null;
+let currentTab   = 'url';
+let selectedMask = -1;
+const ECC_LEVEL  = { L: QRCode.CorrectLevel.L, M: QRCode.CorrectLevel.M, Q: QRCode.CorrectLevel.Q, H: QRCode.CorrectLevel.H };
+
+const MASK_FN = [
+  (r,c)=>(r+c)%2===0,
+  (r,c)=>r%2===0,
+  (r,c)=>c%3===0,
+  (r,c)=>(r+c)%3===0,
+  (r,c)=>(Math.floor(r/2)+Math.floor(c/3))%2===0,
+  (r,c)=>(r*c)%2+(r*c)%3===0,
+  (r,c)=>((r*c)%2+(r*c)%3)%2===0,
+  (r,c)=>((r+c)%2+(r*c)%3)%2===0,
+];
+
+(function() {
+  const grid = document.getElementById('mask-grid');
+  for (let mp = 0; mp < 8; mp++) {
+    const btn = document.createElement('button');
+    btn.className = 'mask-btn'; btn.dataset.mask = mp; btn.title = 'Mask pattern ' + (mp + 1);
+    const cv = document.createElement('canvas'); cv.width = 48; cv.height = 48;
+    const ctx = cv.getContext('2d');
+    for (let r = 0; r < 12; r++) for (let c = 0; c < 12; c++) {
+      ctx.fillStyle = MASK_FN[mp](r,c) ? '#0d2b1e' : '#b2f0f2';
+      ctx.fillRect(c*4, r*4, 4, 4);
+    }
+    btn.appendChild(cv);
+    // Clear pill-shaped number label showing 1–8
+    const num = document.createElement('span');
+    num.className = 'mask-num';
+    num.textContent = mp + 1;
+    btn.appendChild(num);
+    const tick = document.createElement('span'); tick.className = 'tick'; tick.innerHTML = '&#10003;'; btn.appendChild(tick);
+    grid.appendChild(btn);
+  }
+  grid.addEventListener('click', e => {
+    const btn = e.target.closest('.mask-btn'); if (!btn) return;
+    selectedMask = parseInt(btn.dataset.mask);
+    document.querySelectorAll('.mask-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    generate();
+  });
+})();
+
+document.getElementById('tabs').addEventListener('click', e => {
+  if (!e.target.dataset.tab) return;
+  currentTab = e.target.dataset.tab;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  e.target.classList.add('active');
+  ['url','text','wifi','email','phone','vcard'].forEach(t =>
+    document.getElementById('form-'+t).style.display = t === currentTab ? '' : 'none'
+  );
+});
+
+['fg','bg','logo-bg'].forEach(id => {
+  const el = document.getElementById(id+'-color'); if (!el) return;
+  el.addEventListener('input', e => document.getElementById(id+'-hex').textContent = e.target.value);
+});
+document.getElementById('qr-size').addEventListener('input', e =>
+  document.getElementById('size-out').textContent = e.target.value + ' \u00d7 ' + e.target.value + ' px');
+document.getElementById('logo-size').addEventListener('input', e =>
+  document.getElementById('logo-size-out').textContent = e.target.value + '%');
+document.getElementById('logo-pad').addEventListener('input', e =>
+  document.getElementById('logo-pad-out').textContent = e.target.value + ' px');
+
+function setLogo(dataUrl) {
+  logoDataUrl = dataUrl;
+  document.getElementById('logo-img').src = dataUrl;
+  document.getElementById('logo-extras').style.display = '';
+  document.getElementById('ecc').value = 'H';
+}
+document.getElementById('logo-file').addEventListener('change', e => {
+  const f = e.target.files[0]; if (!f) return;
+  const r = new FileReader(); r.onload = ev => setLogo(ev.target.result); r.readAsDataURL(f);
+});
+const dropEl = document.getElementById('logo-drop');
+dropEl.addEventListener('dragover',  e => { e.preventDefault(); dropEl.classList.add('drag'); });
+dropEl.addEventListener('dragleave', ()  => dropEl.classList.remove('drag'));
+dropEl.addEventListener('drop', e => {
+  e.preventDefault(); dropEl.classList.remove('drag');
+  const f = e.dataTransfer.files[0]; if (!f || !f.type.startsWith('image/')) return;
+  const r = new FileReader(); r.onload = ev => setLogo(ev.target.result); r.readAsDataURL(f);
+});
+document.getElementById('logo-remove').addEventListener('click', () => {
+  logoDataUrl = null; document.getElementById('logo-file').value = '';
+  document.getElementById('logo-extras').style.display = 'none';
+});
+
+function getData() {
+  const v = id => (document.getElementById(id)||{value:''}).value.trim();
+  switch (currentTab) {
+    case 'url':   return v('url-input') || 'https://example.com';
+    case 'text':  return v('text-input') || 'Hello world';
+    case 'wifi':  return 'WIFI:T:'+v('wifi-sec')+';S:'+v('wifi-ssid')+';P:'+v('wifi-pass')+';;';
+    case 'email': return 'mailto:'+v('email-to')+'?subject='+encodeURIComponent(v('email-sub'))+'&body='+encodeURIComponent(v('email-body'));
+    case 'phone': return 'tel:'+v('phone-input');
+    case 'vcard': return ['BEGIN:VCARD','VERSION:3.0','N:'+v('vc-last')+';'+v('vc-first'),
+      'FN:'+v('vc-first')+' '+v('vc-last'),'ORG:'+v('vc-org'),'TEL:'+v('vc-phone'),
+      'EMAIL:'+v('vc-email'),'URL:'+v('vc-url'),'END:VCARD'].join('\n');
+  }
+  return '';
+}
+
+function getMatrix(text, eccLevel) {
+  const host = document.getElementById('qr-hidden-host');
+  host.innerHTML = '';
+  const qrObj = new QRCode(host, { text, width: 256, height: 256, colorDark: '#000', colorLight: '#fff', correctLevel: ECC_LEVEL[eccLevel] });
+  const raw = qrObj._oQRCode || qrObj['oQRCode'];
+  if (raw && raw.modules) { host.innerHTML = ''; return raw.modules; }
+  const cv = host.querySelector('canvas');
+  if (!cv) { host.innerHTML = ''; return null; }
+  const ctx = cv.getContext('2d');
+  const cw = cv.width; const data = ctx.getImageData(0, 0, cw, cv.height).data;
+  let modSize = 0;
+  for (let x = 0; x < cw; x++) { if (data[x*4] < 128) modSize++; else break; }
+  if (modSize < 1) { host.innerHTML = ''; return null; }
+  const n = Math.round(cw / modSize);
+  const matrix = [];
+  for (let r = 0; r < n; r++) {
+    const row = []; const py = Math.floor(r * modSize + modSize / 2);
+    for (let c = 0; c < n; c++) { const px = Math.floor(c * modSize + modSize / 2); row.push(data[(py * cw + px) * 4] < 128); }
+    matrix.push(row);
+  }
+  host.innerHTML = ''; return matrix;
+}
+
+function functionalCells(n) {
+  const f = Array.from({length:n}, () => new Uint8Array(n));
+  const mark = (r0,c0,h,w) => { for(let r=r0;r<r0+h;r++) for(let c=c0;c<c0+w;c++) if(r>=0&&r<n&&c>=0&&c<n) f[r][c]=1; };
+  mark(0,0,9,9); mark(0,n-8,9,8); mark(n-8,0,8,9);
+  for (let i=0;i<n;i++) { f[6][i]=1; f[i][6]=1; }
+  for (let i=0;i<=8;i++)  { f[8][i]=1; f[i][8]=1; }
+  for (let i=n-8;i<n;i++) { f[8][i]=1; f[i][8]=1; }
+  f[n-8][8] = 1;
+  const AC = {21:[],25:[6,18],29:[6,22],33:[6,26],37:[6,30],41:[6,34],45:[6,22,38],49:[6,24,42],53:[6,26,46],57:[6,28,50]};
+  const ac = AC[n]||[];
+  for (let a=0;a<ac.length;a++) for (let b=0;b<ac.length;b++) { const r=ac[a],c=ac[b]; if (!f[r][c]) mark(r-2,c-2,5,5); }
+  return f;
+}
+
+// Pre-computed format information words for all 32 ECC+mask combinations.
+// Index = (eccIndex << 3) | maskPattern  where L=1, M=0, Q=3, H=2
+// Values are the exact 15-bit words from the QR spec (BCH encoded + XOR 0x5412).
+const FMT_TABLE = [
+  0x5412,0x5125,0x5E7C,0x5B4B,0x45F9,0x40CE,0x4F97,0x4AA0, // M (0)
+  0x77C4,0x72F3,0x7DAA,0x789D,0x662F,0x6318,0x6C41,0x6976, // L (1)
+  0x1689,0x13BE,0x1CE7,0x19D0,0x0762,0x0255,0x0D0C,0x083B, // H (2)
+  0x355F,0x3068,0x3F31,0x3A06,0x24B4,0x2183,0x2EDA,0x2BED, // Q (3)
+];
+const ECC_IDX = {L:1, M:0, Q:3, H:2};
+
+function applyMask(matrix, eccLevel, newMaskPat) {
+  const n  = matrix.length;
+  const fn = functionalCells(n);
+
+  // Read original mask from top-left format info copy
+  const fmtPos = [
+    [8,0],[8,1],[8,2],[8,3],[8,4],[8,5],[8,7],[8,8],
+    [7,8],[5,8],[4,8],[3,8],[2,8],[1,8],[0,8]
+  ];
+  let rawFmt = 0;
+  fmtPos.forEach(([r, c], i) => {
+    if (matrix[r] && (matrix[r][c] === 1 || matrix[r][c] === true))
+      rawFmt |= (1 << (14 - i));
+  });
+  const origMask = (rawFmt ^ 0x5412) >> 10 & 0x7;
+
+  // Clone to integer matrix
+  const m = matrix.map(row => row.map(v => (v === true || v === 1) ? 1 : 0));
+
+  // Swap masking on data modules
+  const origFn = MASK_FN[origMask], newFn = MASK_FN[newMaskPat];
+  for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) {
+    if (fn[r][c]) continue;
+    let b = m[r][c];
+    if (origFn(r, c)) b ^= 1;
+    if (newFn(r, c))  b ^= 1;
+    m[r][c] = b;
+  }
+
+  // Look up the correct 15-bit format word
+  const fw = FMT_TABLE[(ECC_IDX[eccLevel] << 3) | newMaskPat];
+
+  // Write top-left copy (bit 14 down to bit 0)
+  fmtPos.forEach(([r, c], i) => { m[r][c] = (fw >> (14 - i)) & 1; });
+
+  // Write bottom-left copy: (n-1,8)→bit0 … (n-7,8)→bit6
+  for (let i = 0; i < 7; i++) m[n - 1 - i][8] = (fw >> i) & 1;
+
+  // Write top-right copy: (8,n-8)→bit7 … (8,n-1)→bit14
+  for (let i = 0; i < 8; i++) m[8][n - 8 + i] = (fw >> (7 + i)) & 1;
+
+  // Dark module is always 1
+  m[n - 8][8] = 1;
+
+  return m;
+}
+
+function calcPenalty(matrix) {
+  const n = matrix.length;
+  const d = (r,c) => (matrix[r][c] === 1 || matrix[r][c] === true) ? 1 : 0;
+  let p = 0;
+  for (let r = 0; r < n; r++) {
+    let rc = 1, cc = 1;
+    for (let c = 1; c < n; c++) {
+      rc = d(r,c) === d(r,c-1) ? rc+1 : 1; if (rc === 5) p += 3; else if (rc > 5) p += 1;
+      cc = d(c,r) === d(c-1,r) ? cc+1 : 1; if (cc === 5) p += 3; else if (cc > 5) p += 1;
+    }
+  }
+  for (let r = 0; r < n-1; r++) for (let c = 0; c < n-1; c++)
+    if (d(r,c)===d(r+1,c)&&d(r,c)===d(r,c+1)&&d(r,c)===d(r+1,c+1)) p += 3;
+  const P1=[1,0,1,1,1,0,1,0,0,0,0], P2=[0,0,0,0,1,0,1,1,1,0,1];
+  for (let r = 0; r < n; r++) for (let c = 0; c <= n-11; c++) {
+    let m1=true,m2=true,m3=true,m4=true;
+    for (let i=0;i<11;i++){m1=m1&&d(r,c+i)===P1[i];m2=m2&&d(r,c+i)===P2[i];m3=m3&&d(c+i,r)===P1[i];m4=m4&&d(c+i,r)===P2[i];}
+    if (m1||m2) p+=40; if (m3||m4) p+=40;
+  }
+  const dark = matrix.flat().filter(v=>v===1||v===true).length;
+  const ratio = dark/(n*n)*100;
+  p += Math.min(Math.abs(Math.floor(ratio/5)*5-50),Math.abs(Math.ceil(ratio/5)*5-50))/5*10;
+  return p;
+}
+
+function drawMatrix(matrix, size, fg, bg) {
+  const canvas = document.getElementById('qr-canvas');
+  const n = matrix.length, margin = 4, totalModules = n + margin*2, modPx = size/totalModules;
+  canvas.width = size; canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = bg; ctx.fillRect(0,0,size,size);
+  ctx.fillStyle = fg;
+  for (let r=0;r<n;r++) for (let c=0;c<n;c++) {
+    if (matrix[r][c]===true||matrix[r][c]===1) {
+      ctx.fillRect(Math.floor((c+margin)*modPx),Math.floor((r+margin)*modPx),Math.ceil(modPx),Math.ceil(modPx));
+    }
+  }
+}
+
+function overlayLogo(canvas, src, pct, pad, bgCol) {
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => {
+      const ctx = canvas.getContext('2d');
+      const ls = canvas.width*(pct/100), x=(canvas.width-ls)/2, y=(canvas.height-ls)/2;
+      const bx=x-pad,by=y-pad,bw=ls+pad*2,bh=ls+pad*2,rv=8;
+      ctx.fillStyle = bgCol;
+      ctx.beginPath();
+      ctx.moveTo(bx+rv,by);ctx.lineTo(bx+bw-rv,by);ctx.quadraticCurveTo(bx+bw,by,bx+bw,by+rv);
+      ctx.lineTo(bx+bw,by+bh-rv);ctx.quadraticCurveTo(bx+bw,by+bh,bx+bw-rv,by+bh);
+      ctx.lineTo(bx+rv,by+bh);ctx.quadraticCurveTo(bx,by+bh,bx,by+bh-rv);
+      ctx.lineTo(bx,by+rv);ctx.quadraticCurveTo(bx,by,bx+rv,by);
+      ctx.closePath();ctx.fill();
+      ctx.drawImage(img,x,y,ls,ls);
+      resolve();
+    };
+    img.src = src;
+  });
+}
+
+async function generate() {
+  const text    = getData();
+  const ecc     = document.getElementById('ecc').value;
+  const outSize = parseInt(document.getElementById('qr-size').value);
+  const fg      = document.getElementById('fg-color').value;
+  const bg      = document.getElementById('bg-color').value;
+  let matrix = getMatrix(text, ecc);
+  if (!matrix) { alert('Could not generate QR code — try shorter content.'); return; }
+
+  // Compute penalty scores for all 8 masks so we know which is truly optimal
+  const baseMatrix = getMatrix(text, ecc);
+  const scores = [];
+  for (let mp = 0; mp < 8; mp++) { const cand = applyMask(baseMatrix, ecc, mp); scores.push({mask:mp, score:calcPenalty(cand)}); }
+  const minScore = Math.min(...scores.map(s=>s.score));
+  const maxScore = Math.max(...scores.map(s=>s.score));
+  const bestMask = scores.find(s => s.score === minScore).mask;
+
+  if (selectedMask >= 0) {
+    matrix = applyMask(matrix, ecc, selectedMask);
+  } else {
+    // Auto mode: re-mask to the lowest-penalty mask so the displayed QR matches the star
+    matrix = applyMask(matrix, ecc, bestMask);
+  }
+  drawMatrix(matrix, outSize, fg, bg);
+  if (logoDataUrl) {
+    await overlayLogo(document.getElementById('qr-canvas'), logoDataUrl,
+      parseInt(document.getElementById('logo-size').value),
+      parseInt(document.getElementById('logo-pad').value),
+      document.getElementById('logo-bg').value);
+  }
+  document.getElementById('placeholder').style.display = 'none';
+  document.getElementById('qr-canvas').style.display   = 'block';
+  document.getElementById('dl-row').style.display      = 'flex';
+
+  const fmtPos = [[8,0],[8,1],[8,2],[8,3],[8,4],[8,5],[8,7],[8,8],[7,8],[5,8],[4,8],[3,8],[2,8],[1,8],[0,8]];
+  let rawFmt = 0;
+  fmtPos.forEach(([r,c],i) => { if (matrix[r][c]===true||matrix[r][c]===1) rawFmt |= (1<<(14-i)); });
+  const usedMask = (rawFmt^0x5412)>>10 & 0x7;
+
+  const autoNumEl = document.getElementById('auto-num');
+  document.querySelectorAll('.mask-btn').forEach(b => b.classList.remove('active','auto-used'));
+  if (selectedMask === -1) {
+    document.querySelector('.mask-btn[data-mask="-1"]').classList.add('active');
+    const usedBtn = document.querySelector('.mask-btn[data-mask="'+usedMask+'"]');
+    if (usedBtn) usedBtn.classList.add('auto-used');
+    if (autoNumEl) { autoNumEl.textContent = '#'+(usedMask+1); autoNumEl.style.display = 'block'; }
+  } else {
+    document.querySelector('.mask-btn[data-mask="'+selectedMask+'"]').classList.add('active');
+    if (autoNumEl) { autoNumEl.textContent = ''; autoNumEl.style.display = 'none'; }
+  }
+
+  const MASK_DESC = [
+    '(row + col) mod 2 = 0','row mod 2 = 0','col mod 3 = 0','(row + col) mod 3 = 0',
+    '(⌊row/2⌋ + ⌊col/3⌋) mod 2 = 0','(r·c mod 2) + (r·c mod 3) = 0',
+    '((r·c mod 2) + (r·c mod 3)) mod 2 = 0','((r+c mod 2) + (r·c mod 3)) mod 2 = 0',
+  ];
+  const tbody = document.getElementById('score-tbody'); tbody.innerHTML = '';
+  scores.forEach(({mask:mp, score}) => {
+    const isAuto = (mp===usedMask && selectedMask===-1), isSel=(mp===selectedMask), isBest=score===minScore;
+    const tr = document.createElement('tr');
+    if (isAuto||(isBest&&selectedMask===-1)) tr.className='row-best'; else if (isSel) tr.className='row-selected';
+    const barW = Math.max(2, Math.round(120*(score-minScore)/(maxScore-minScore+1)));
+    const barClass = (isAuto||(isBest&&selectedMask===-1))?'best':isSel?'selected':'';
+    tr.innerHTML = '<td>Mask '+(mp+1)+(isBest?' &#9733;':'')+'</td>'+
+      '<td style="color:var(--text-muted);font-size:11px">'+MASK_DESC[mp]+'</td>'+
+      '<td><div class="score-bar-wrap"><div class="score-bar '+barClass+'" style="width:'+barW+'px"></div>'+
+      '<span class="score-val">'+score+'</span></div></td>';
+    tbody.appendChild(tr);
+  });
+  document.getElementById('score-table-wrap').classList.add('visible');
+}
+
+function dlPng() {
+  const a = document.createElement('a'); a.download = 'qrcode.png';
+  a.href = document.getElementById('qr-canvas').toDataURL('image/png'); a.click();
+}
+function dlSvg() {
+  const canvas = document.getElementById('qr-canvas'), sz = canvas.width;
+  const fg = document.getElementById('fg-color').value, bg = document.getElementById('bg-color').value;
+  const d = canvas.getContext('2d').getImageData(0,0,sz,sz).data;
+  let rects = '';
+  for (let y=0;y<sz;y++) for (let x=0;x<sz;x++) {
+    const i=(y*sz+x)*4; if (d[i]+d[i+1]+d[i+2]<384) rects+='<rect x="'+x+'" y="'+y+'" width="1" height="1" fill="'+fg+'"/>';
+  }
+  const svg='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+sz+' '+sz+'" width="'+sz+'" height="'+sz+'"><rect width="'+sz+'" height="'+sz+'" fill="'+bg+'"/>'+rects+'</svg>';
+  const a=document.createElement('a'); a.download='qrcode.svg';
+  a.href=URL.createObjectURL(new Blob([svg],{type:'image/svg+xml'})); a.click();
+}
+
+document.addEventListener('keydown', e => { if (e.key==='Enter'&&e.ctrlKey) generate(); });
+</script>
+</body>
+</html>
