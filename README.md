@@ -37,9 +37,9 @@ A QR code is like a **seed**: small, square-ish, and packed with hidden informat
 
 ### Option 2: Clone it
 ```bash
-git clone https://github.com/<your-username>/<your-repo>.git
-cd <your-repo>
-# Open the HTML file in your browser
+git clone https://github.com/adalorch/Ada-QR-Code-Generator.git
+cd Ada-QR-Code-Generator
+# Open sts_2026_ada_qr_code_generato.html file in your browser
 ```
 
 ---
